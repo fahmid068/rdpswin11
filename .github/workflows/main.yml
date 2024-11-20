@@ -6,7 +6,6 @@ on:
 jobs:
   setup-rdp:
     runs-on: windows-latest
-
     steps:
     # Step 1: Download ngrok
     - name: Download ngrok
