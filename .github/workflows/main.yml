@@ -1,25 +1,45 @@
-name: CI
+name: Setup RDP with ngrok
 
-on: [push, workflow_dispatch]
+on:
+  workflow_dispatch:
 
 jobs:
-  build:
-
+  setup-rdp:
     runs-on: windows-latest
 
     steps:
-    - name: Download
-      run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-    - name: Extract
-      run: Expand-Archive ngrok.zip
-    - name: Auth
+    # Step 1: Download ngrok
+    - name: Download ngrok
+      run: Invoke-WebRequest -Uri https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+
+    - name: Extract ngrok
+      run: Expand-Archive -Path ngrok.zip -DestinationPath .
+
+    # Step 2: Authenticate ngrok
+    - name: Authenticate ngrok
       run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-    - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-    - run: Set-LocalUser -Name "smadmin" -Password (ConvertTo-SecureString -AsPlainText "@5ASSword@" -Force)
-    - name: Create Tunnel
+
+    # Step 3: Enable RDP and Configure Firewall
+    - name: Enable RDP and Firewall Rules
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+
+    # Step 4: Create or Update a User
+    - name: Create New User
+      run: |
+        $Username = "smadmin"  # Replace with your desired username
+        $Password = ConvertTo-SecureString -AsPlainText "NewP@ssw0rd!" -Force  # Replace with your desired password
+        if (-not (Get-LocalUser | Where-Object { $_.Name -eq $Username })) {
+          New-LocalUser -Name $Username -Password $Password -FullName "CI User" -Description "User for CI/CD RDP Access"
+        } else {
+          Set-LocalUser -Name $Username -Password $Password
+        }
+        Add-LocalGroupMember -Group "Remote Desktop Users" -Member $Username
+
+    # Step 5: Start ngrok Tunnel
+    - name: Start ngrok for RDP
       run: .\ngrok\ngrok.exe tcp 3389
