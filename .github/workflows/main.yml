@@ -31,7 +31,7 @@ jobs:
     - name: Create New User
       run: |
         $Username = "smadmin"  # Replace with your desired username
-        $Password = ConvertTo-SecureString -AsPlainText "NewP@ssw0rd!" -Force  # Replace with your desired password
+        $Password = ConvertTo-SecureString -AsPlainText "NewP@ssw0rdd!" -Force  # Replace with your desired password
         if (-not (Get-LocalUser | Where-Object { $_.Name -eq $Username })) {
           New-LocalUser -Name $Username -Password $Password -FullName "CI User" -Description "User for CI/CD RDP Access"
         } else {
