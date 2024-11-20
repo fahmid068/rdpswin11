@@ -41,5 +41,8 @@ jobs:
         Add-LocalGroupMember -Group "Remote Desktop Users" -Member $Username
 
     # Step 5: Start ngrok Tunnel
-    - name: Start ngrok for RDP
-      run: .\ngrok\ngrok.exe tcp 3389
+    #- name: Start ngrok for RDP
+    #  run: .\ngrok\ngrok.exe tcp 3389
+    - name: Start Serveo Tunnel for RDP
+      run: |
+        ssh -o StrictHostKeyChecking=no -R 3389:localhost:3389 serveo.net
